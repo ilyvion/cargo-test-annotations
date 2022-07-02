@@ -9,11 +9,18 @@ inputs:
         description: "Path to tests.json generated from running one or more `cargo test`s"
         required: true
 runs:
-    using: "docker"
-    image: "Dockerfile"
-    args:
-        - ${{ inputs.metadata }}
-        - ${{ inputs.tests }}
+    using: "composite"
+    steps:
+        - name: Install ourselves
+          uses: actions-rs/cargo@v1
+          with:
+              command: install
+              args: --path ${{ github.action_path }}
+        - name: Run ourselves
+          uses: actions-rs/cargo@v1
+          with:
+              command: test-annotations
+              args: ${{ inputs.metadata }} ${{ inputs.tests }}
 
 branding:
     icon: flag
