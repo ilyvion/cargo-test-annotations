@@ -22,8 +22,15 @@ use miette::{Context, IntoDiagnostic};
 use regex::Regex;
 
 fn main() -> miette::Result<()> {
-    let mut args = std::env::args();
-    args.next(); // skip executable
+    let mut args = std::env::args().peekable();
+    let _ = args.next().unwrap(); // skip executable
+    if let Some(second) = args.peek() {
+        if second == "test-annotations" {
+            // If we're being invoked by cargo,
+            // also skip second argument
+            let _ = args.next();
+        }
+    }
     let metadata_output_path = args
         .next()
         .expect("first argument to program is path to file of metadata output");
