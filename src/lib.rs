@@ -552,8 +552,8 @@ impl TestFailureInfo {
 #[derive(Clone, Debug)]
 pub struct TestFailureLocation {
     pub file: String,
-    pub line: usize,
-    pub column: usize,
+    pub line: u32,
+    pub column: u32,
 }
 
 impl FromStr for TestFailureLocation {
@@ -565,12 +565,12 @@ impl FromStr for TestFailureLocation {
             .next()
             .ok_or_else(|| TestFailureLocationParseError(s.to_owned()))?
             .to_owned();
-        let line: usize = parts
+        let line: u32 = parts
             .next()
             .ok_or_else(|| TestFailureLocationParseError(s.to_owned()))?
             .parse()
             .map_err(|_| TestFailureLocationParseError(s.to_owned()))?;
-        let column: usize = parts
+        let column: u32 = parts
             .next()
             .ok_or_else(|| TestFailureLocationParseError(s.to_owned()))?
             .parse()

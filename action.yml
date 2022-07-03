@@ -8,6 +8,12 @@ inputs:
     tests:
         description: "Path to tests.json generated from running one or more `cargo test`s"
         required: true
+    token:
+        description: "The `GITHUB_TOKEN` secret of the workflow instance"
+        required: true
+    name:
+        description: Display name of the created GitHub Check Run. Must be unique across several Cargo Test Annotations invocations for a given workflow event.
+        default: cargo-test-annotations
 runs:
     using: "composite"
     steps:
@@ -18,9 +24,15 @@ runs:
               args: --path ${{ github.action_path }}
         - name: Run ourselves
           uses: actions-rs/cargo@v1
+          env:
+              # Pass our inputs on because GitHub won't do it since we're not
+              # a node.js action.
+              INPUT_METADATA: ${{ inputs.metadata }}
+              INPUT_TESTS: ${{ inputs.tests }}
+              INPUT_TOKEN: ${{ inputs.token }}
+              INPUT_NAME: ${{ inputs.name }}
           with:
               command: test-annotations
-              args: ${{ inputs.metadata }} ${{ inputs.tests }}
 
 branding:
     icon: flag
