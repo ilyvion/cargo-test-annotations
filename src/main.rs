@@ -22,7 +22,6 @@ use chrono::Utc;
 use miette::{Context, IntoDiagnostic};
 use octocrab::OctocrabBuilder;
 use regex::Regex;
-use reqwest::header::HeaderName;
 use tokio::runtime::Runtime;
 
 use crate::octocrab_extra::models::checks::{
@@ -47,13 +46,14 @@ fn main() -> miette::Result<()> {
         .into_diagnostic()
         .with_context(|| tests)?;
 
-    let octocrab = octocrab::initialise(OctocrabBuilder::new()
-    // .add_header(
-    //     HeaderName::from_static("authorization"),
-    //     format!("Bearer {token}"),
-    // )
-    .personal_token(token)
-)
+    let octocrab = octocrab::initialise(
+        OctocrabBuilder::new()
+            // .add_header(
+            //     HeaderName::from_static("authorization"),
+            //     format!("Bearer {token}"),
+            // )
+            .personal_token(token),
+    )
     .expect("octocrab initialization");
 
     let test_runs = cargo_test_annotations::parse(test_output_file, metadata)?;
@@ -96,7 +96,6 @@ fn main() -> miette::Result<()> {
 cause:
 {}
 
-stacktrace:
 {}"#,
                     features.join(", "),
                     failure.panic_text.replace("\r\n", "\n").replace('\r', "\n"),
@@ -116,10 +115,10 @@ stacktrace:
             let location = &failure.location;
 
             let (_, real_line, real_column) =
-                DOCTEST_NAME_FILE_REGEX.with(|r| -> miette::Result<(String, u32, u32)> {
+                DOCTEST_NAME_FILE_REGEX.with(|r| -> miette::Result<(String, u64, u64)> {
                     if let Some(c) = r.captures(&result.name) {
                         parse_capture!(let file: String = c);
-                        parse_capture!(let line: u32 = c);
+                        parse_capture!(let line: u64 = c);
 
                         let real_line = location.line + line - 3;
                         let real_column = location.column + 4;
@@ -138,11 +137,10 @@ stacktrace:
                 message: format!(
                     r#"features: [{}]
     
-    cause:
-    {}
-    
-    stacktrace:
-    {}"#,
+cause:
+{}
+
+{}"#,
                     features.join(", "),
                     failure.panic_text.replace("\r\n", "\n").replace('\r', "\n"),
                     failure.stacktrace.replace("\r\n", "\n").replace('\r', "\n")
@@ -179,8 +177,8 @@ stacktrace:
                 .conclusion(CheckRunConclusion::Failure)
                 .completed_at(Utc::now())
                 .send()
-                .await
-                .into_diagnostic()?;
+                .await?;
+            //.into_diagnostic()?;
 
             dbg!(check_run);
         } else {

@@ -44,21 +44,21 @@ pub struct CheckRunAnnotation {
     /// The path of the file to add an annotation to. For example, assets/css/main.css.
     pub path: String,
     /// The start line of the annotation.
-    pub start_line: u32,
+    pub start_line: u64,
     /// The end line of the annotation.
-    pub end_line: u32,
+    pub end_line: u64,
     /// The start column of the annotation. Annotations only support
     /// `start_column` and `end_column` on the same line.
     /// Omit this parameter if `start_line` and `end_line` have different
     /// values.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_column: Option<u32>,
+    pub start_column: Option<u64>,
     /// The end column of the annotation. Annotations only support
     /// `start_column` and `end_column` on the same line.
     /// Omit this parameter if `start_line` and `end_line` have different
     /// values.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_column: Option<u32>,
+    pub end_column: Option<u64>,
     /// The level of the annotation.
     pub annotation_level: AnnotationLevel,
     /// A short description of the feedback for these lines of code. The
@@ -114,14 +114,14 @@ pub struct CheckRunOutputResponse {
     pub title: String,
     pub summary: String,
     pub text: String,
-    pub annotations_count: u32,
+    pub annotations_count: u64,
     pub annotations_url: String,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub struct CheckRunCheckSuite {
-    pub id: u32,
+    pub id: u64,
 }
 
 /// A check performed on the code of a given code change
@@ -129,7 +129,7 @@ pub struct CheckRunCheckSuite {
 #[non_exhaustive]
 pub struct CheckRun {
     /// The id of the check.
-    pub id: u32,
+    pub id: u64,
     /// The SHA of the commit that is being checked.
     pub head_sha: String,
     pub node_id: String,

@@ -1,3 +1,6 @@
+use miette::{Context, IntoDiagnostic};
+use reqwest::Method;
+
 use crate::octocrab_extra::models::checks::{
     CheckRun, CheckRunAction, CheckRunConclusion, CheckRunOutputArgument, CheckRunStatus,
 };
@@ -109,13 +112,32 @@ impl<'octo, 'r> CreateCheckRunBuilder<'octo, 'r> {
     }
 
     /// Send the actual request.
-    pub async fn send(self) -> octocrab::Result<CheckRun> {
+    pub async fn send(self) -> miette::Result<CheckRun> {
         let route = format!(
             "repos/{owner}/{repo}/check-runs",
             owner = self.handler.owner,
             repo = self.handler.repo,
         );
 
-        self.handler.crab.post(route, Some(&self)).await
+        let token = std::env::var("INPUT_TOKEN").expect("`token` input value missing");
+        let client = reqwest::Client::builder().build().into_diagnostic()?;
+        let request = client
+            .request(Method::POST, format!(" https://api.github.com/{route}"))
+            .header("authorization", format!("token {token}"))
+            .header("accept", "application/vnd.github+json")
+            .header("user-agent", "alexschrod/cargo-test-annotations")
+            .json(&self)
+            .build()
+            .into_diagnostic()?;
+        let response = client.execute(request).await.into_diagnostic()?;
+        if response.status().is_success() {
+            let data = response.text().await.into_diagnostic()?;
+            Ok(serde_json::from_str(&data)
+                .into_diagnostic()
+                .wrap_err(data)?)
+        } else {
+            let _ = response.error_for_status().into_diagnostic()?;
+            unreachable!("we should only get here if we got an error")
+        }
     }
 }
