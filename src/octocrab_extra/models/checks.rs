@@ -111,9 +111,9 @@ pub enum AnnotationLevel {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub struct CheckRunOutputResponse {
-    pub title: String,
-    pub summary: String,
-    pub text: String,
+    pub title: Option<String>,
+    pub summary: Option<String>,
+    pub text: Option<String>,
     pub annotations_count: u64,
     pub annotations_url: String,
 }
