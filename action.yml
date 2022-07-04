@@ -17,11 +17,19 @@ inputs:
 runs:
     using: "composite"
     steps:
+        - name: Cache executable
+          id: cache-executable
+          uses: actions/cache@v3
+          with:
+              path: ~/.cargo/bin/cargo-test-annotations*
+              key: ${{ runner.os }}-build-${{ hashFiles('**/Cargo.toml', '**/*.rs') }}
+
         - name: Install ourselves
           uses: actions-rs/cargo@v1
           with:
               command: install
               args: --path ${{ github.action_path }}
+
         - name: Run ourselves
           uses: actions-rs/cargo@v1
           env:
