@@ -21,8 +21,12 @@ runs:
           id: cache-executable
           uses: actions/cache@v3
           with:
-              path: ~/.cargo/bin/cargo-test-annotations*
-              key: ${{ runner.os }}-build-${{ hashFiles('**/Cargo.toml', '**/*.rs') }}
+              path: |
+                  ${{ github.action_path }}/target
+                  ~/.cargo/bin/cargo-test-annotations*
+              key: build-${{ hashFiles('**/Cargo.toml', '**/*.rs') }}
+              restore-keys: |
+                  build-
 
         - name: Install ourselves
           uses: actions-rs/cargo@v1

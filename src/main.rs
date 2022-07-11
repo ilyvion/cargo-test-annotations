@@ -159,10 +159,9 @@ cause:
 
     let rt = Runtime::new().into_diagnostic()?;
     rt.block_on(async {
-        // TODO: Make a report also when successful
         let checks = octocrab.checks(owner, repo);
         let annotations_count = annotations.len();
-        if annotations_count < 50 {
+        if annotations.is_empty() {
             let output = CheckRunOutputArgument {
                 annotations: Some(annotations),
                 title: name.clone(),
@@ -170,7 +169,23 @@ cause:
                 text: None,
                 images: None,
             };
-            let check_run = checks
+            let _check_run = checks
+                .create_check_run(name, sha)
+                .output(output)
+                .status(CheckRunStatus::Completed)
+                .conclusion(CheckRunConclusion::Success)
+                .completed_at(Utc::now())
+                .send()
+                .await?;
+        } else if annotations_count < 50 {
+            let output = CheckRunOutputArgument {
+                annotations: Some(annotations),
+                title: name.clone(),
+                summary: format!("{} test failures", annotations_count),
+                text: None,
+                images: None,
+            };
+            let _check_run = checks
                 .create_check_run(name, sha)
                 .output(output)
                 .status(CheckRunStatus::Completed)
@@ -178,12 +193,10 @@ cause:
                 .completed_at(Utc::now())
                 .send()
                 .await?;
-            //.into_diagnostic()?;
-
-            dbg!(check_run);
         } else {
-            todo!("Report annotations in batches when > 50; API limitation")
+            todo!("report annotations in batches when > 50; API limitation")
         }
+        // TODO: Check the return value from the GitHub API for errors and such.
 
         Ok::<(), miette::Report>(())
     })?;
