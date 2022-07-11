@@ -147,5 +147,5 @@ pub struct CheckRun {
     pub check_suite: Option<CheckRunCheckSuite>,
     pub app: Option<App>,
     pub pull_requests: Vec<PullRequest>,
-    pub deployment: Value,
+    pub deployment: Option<Value>,
 }
