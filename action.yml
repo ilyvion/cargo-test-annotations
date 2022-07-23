@@ -23,16 +23,18 @@ runs:
           with:
               path: |
                   ${{ github.action_path }}/target
-                  ~/.cargo/bin/cargo-test-annotations*
               key: build-${{ hashFiles('**/Cargo.toml', '**/*.rs') }}
               restore-keys: |
                   build-
 
+        # TODO: Read out the currently installed version and compare with our
+        #       own and only do an install if none is found or an older version
+        #       is found. For now, though, --force.
         - name: Install ourselves
           uses: actions-rs/cargo@v1
           with:
               command: install
-              args: --path ${{ github.action_path }}
+              args: --path ${{ github.action_path }} --force
 
         - name: Run ourselves
           uses: actions-rs/cargo@v1
