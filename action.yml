@@ -17,25 +17,13 @@ inputs:
 runs:
     using: "composite"
     steps:
-        - name: Cache executable
-          id: cache-executable
-          uses: actions/cache@v3
-          with:
-              path: |
-                  ${{ github.action_path }}/target
-                  ~/.cargo
-              key: build-${{ hashFiles('**/Cargo.toml', '**/*.rs') }}
-              restore-keys: |
-                  build-
+        - name: Cache
+          uses: Swatinem/rust-cache@v2
 
-        # TODO: Read out the currently installed version and compare with our
-        #       own and only do an install if none is found or an older version
-        #       is found. For now, though, --force.
-        - name: Install ourselves
+        - name: Build ourselves
           uses: actions-rs/cargo@v1
           with:
-              command: install
-              args: --path ${{ github.action_path }} --force
+              command: build
 
         - name: Run ourselves
           uses: actions-rs/cargo@v1
@@ -47,7 +35,7 @@ runs:
               INPUT_TOKEN: ${{ inputs.token }}
               INPUT_NAME: ${{ inputs.name }}
           with:
-              command: test-annotations
+              command: run
 
 branding:
     icon: flag
