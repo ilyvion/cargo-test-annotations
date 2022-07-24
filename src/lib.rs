@@ -618,7 +618,7 @@ impl TestSummary {
 }
 
 thread_local! {
-    static RUNNING_REGEX: Regex = Regex::new(r"running (?P<count>\d+) tests").unwrap();
+    static RUNNING_REGEX: Regex = Regex::new(r"running (?P<count>\d+) tests?").unwrap();
     static TEST_REGEX: Regex = Regex::new(r"test (?P<name>.+?) ... (?P<result>ok|FAILED)").unwrap();
     static RESULT_REGEX: Regex = Regex::new(r"test result: (?P<result>ok|FAILED). (?P<passed>\d+) passed; (?P<failed>\d+) failed; (?P<ignored>\d+) ignored; (?P<measured>\d+) measured; (?P<filtered>\d+) filtered out; finished in (?P<time>.+)").unwrap();
     static FAILURE_HEADER_REGEX: Regex = Regex::new(r"---- (?P<name>.+?) stdout ----").unwrap();

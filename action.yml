@@ -23,6 +23,7 @@ runs:
           with:
               path: |
                   ${{ github.action_path }}/target
+                  ~/.cargo
               key: build-${{ hashFiles('**/Cargo.toml', '**/*.rs') }}
               restore-keys: |
                   build-
