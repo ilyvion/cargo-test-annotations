@@ -20,16 +20,15 @@ use cargo_metadata::MetadataCommand;
 use cargo_test_annotations::{parse_capture, TestResultValue};
 use chrono::Utc;
 use miette::{Context, IntoDiagnostic};
+use octocrab::params::checks::{
+    CheckRunConclusion, CheckRunOutput, CheckRunOutputAnnotation, CheckRunOutputAnnotationLevel,
+    CheckRunStatus,
+};
 use octocrab::OctocrabBuilder;
 use regex::Regex;
-use tokio::runtime::Runtime;
 
-use crate::octocrab_extra::models::checks::{
-    AnnotationLevel, CheckRunAnnotation, CheckRunConclusion, CheckRunOutputArgument, CheckRunStatus,
-};
-use crate::octocrab_extra::OctocrabExt;
-
-fn main() -> miette::Result<()> {
+#[tokio::main]
+async fn main() -> miette::Result<()> {
     let metadata = std::env::var("INPUT_METADATA").expect("`metadata` input value missing");
     let tests = std::env::var("INPUT_TESTS").expect("`tests` input value missing");
     let token = std::env::var("INPUT_TOKEN").expect("`token` input value missing");
@@ -48,13 +47,10 @@ fn main() -> miette::Result<()> {
 
     let octocrab = octocrab::initialise(
         OctocrabBuilder::new()
-            // .add_header(
-            //     HeaderName::from_static("authorization"),
-            //     format!("Bearer {token}"),
-            // )
-            .personal_token(token),
-    )
-    .expect("octocrab initialization");
+            .user_access_token(token)
+            .build()
+            .expect("valid configuration"),
+    );
 
     let test_runs = cargo_test_annotations::parse(test_output_file, metadata)?;
     let mut annotations = Vec::new();
@@ -83,12 +79,12 @@ fn main() -> miette::Result<()> {
             let failure = result.result.unwrap_failure_ref();
             let location = &failure.location;
 
-            annotations.push(CheckRunAnnotation {
-                annotation_level: AnnotationLevel::Failure,
+            annotations.push(CheckRunOutputAnnotation {
+                annotation_level: CheckRunOutputAnnotationLevel::Failure,
                 path: location.file.clone(),
-                start_line: location.line,
-                end_line: location.line,
-                start_column: Some(location.column),
+                start_line: location.line as u32,
+                end_line: location.line as u32,
+                start_column: Some(location.column as u32),
                 end_column: None,
                 message: format!(
                     r#"features: [{}]
@@ -127,12 +123,12 @@ cause:
                     miette::bail!("Doctest title in unexpected format: {}", &result.name);
                 })?;
 
-            annotations.push(CheckRunAnnotation {
-                annotation_level: AnnotationLevel::Failure,
+            annotations.push(CheckRunOutputAnnotation {
+                annotation_level: CheckRunOutputAnnotationLevel::Failure,
                 path: location.file.clone(),
-                start_line: real_line,
-                end_line: real_line,
-                start_column: Some(real_column),
+                start_line: real_line as u32,
+                end_line: real_line as u32,
+                start_column: Some(real_column as u32),
                 end_column: None,
                 message: format!(
                     r#"features: [{}]
@@ -157,49 +153,46 @@ cause:
     let repo = repo_split.next().expect("repo");
     let sha = std::env::var("GITHUB_SHA").expect("GITHUB_SHA env variable");
 
-    let rt = Runtime::new().into_diagnostic()?;
-    rt.block_on(async {
-        let checks = octocrab.checks(owner, repo);
-        let annotations_count = annotations.len();
-        if annotations.is_empty() {
-            let output = CheckRunOutputArgument {
-                annotations: Some(annotations),
-                title: name.clone(),
-                summary: format!("{} test failures", annotations_count),
-                text: None,
-                images: None,
-            };
-            let _check_run = checks
-                .create_check_run(name, sha)
-                .output(output)
-                .status(CheckRunStatus::Completed)
-                .conclusion(CheckRunConclusion::Success)
-                .completed_at(Utc::now())
-                .send()
-                .await?;
-        } else if annotations_count < 50 {
-            let output = CheckRunOutputArgument {
-                annotations: Some(annotations),
-                title: name.clone(),
-                summary: format!("{} test failures", annotations_count),
-                text: None,
-                images: None,
-            };
-            let _check_run = checks
-                .create_check_run(name, sha)
-                .output(output)
-                .status(CheckRunStatus::Completed)
-                .conclusion(CheckRunConclusion::Failure)
-                .completed_at(Utc::now())
-                .send()
-                .await?;
-        } else {
-            todo!("report annotations in batches when > 50; API limitation")
-        }
-        // TODO: Check the return value from the GitHub API for errors and such.
-
-        Ok::<(), miette::Report>(())
-    })?;
+    let checks = octocrab.checks(owner, repo);
+    let annotations_count = annotations.len();
+    if annotations.is_empty() {
+        let output = CheckRunOutput {
+            annotations,
+            title: name.clone(),
+            summary: format!("{} test failures", annotations_count),
+            text: None,
+            images: Vec::new(),
+        };
+        let _check_run = checks
+            .create_check_run(name, sha)
+            .output(output)
+            .status(CheckRunStatus::Completed)
+            .conclusion(CheckRunConclusion::Success)
+            .completed_at(Utc::now())
+            .send()
+            .await
+            .into_diagnostic()?;
+    } else if annotations_count < 50 {
+        let output = CheckRunOutput {
+            annotations,
+            title: name.clone(),
+            summary: format!("{} test failures", annotations_count),
+            text: None,
+            images: Vec::new(),
+        };
+        let _check_run = checks
+            .create_check_run(name, sha)
+            .output(output)
+            .status(CheckRunStatus::Completed)
+            .conclusion(CheckRunConclusion::Failure)
+            .completed_at(Utc::now())
+            .send()
+            .await
+            .into_diagnostic()?;
+    } else {
+        todo!("report annotations in batches when > 50; API limitation")
+    }
+    // TODO: Check the return value from the GitHub API for errors and such.
 
     Ok(())
 }
@@ -207,5 +200,3 @@ cause:
 thread_local! {
     static DOCTEST_NAME_FILE_REGEX: Regex = Regex::new(r"(?P<file>.+?) - \(line (?P<line>\d+)\)").unwrap();
 }
-
-mod octocrab_extra;
